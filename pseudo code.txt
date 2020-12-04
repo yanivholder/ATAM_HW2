@@ -1,0 +1,19 @@
+calc {
+	the_assignment_whole_exp = get_from_stdin()
+	return_val = 0
+	copy_func (curr_whole_exp, the_assignment_whole_exp) 			//copy_func(destination,source)
+	if (empty_emp()){
+		jmp finish
+	}
+	while(!is_there_only_val()){									//no operator, whether there are parethesis or not
+		exp_loc, exp_len = get_deepest_exp(curr_whole_exp)
+		op1, op2, op = get_exp_info(curr_whole_exp, exp_loc, exp_len)
+		result = calc_exp (op1, op2, op)							//directs to 4 real culculating funcs
+		rewrite_whole_exp(curr_whole_exp, exp_loc, exp_len, result) //points curr_whole_exp to the new curr_whole_exp after change
+	}
+	return_val = extract_from_exp()									//whether there are parethesis or not
+
+
+finish
+	print_len = result_as_sting(return_val)
+	print_to_stdout(what_to_print, print_len)
