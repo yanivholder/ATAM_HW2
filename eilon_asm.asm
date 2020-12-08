@@ -1,7 +1,5 @@
 
 #-------------------------test code----------------------
-
-
 .global main #switch to _start!!!!!!!!
 
 .section .data
@@ -11,35 +9,21 @@ msg: .fill 0, 0, 0
 
 .section .text
 main:
-    /*
-    movq $0, %rax
-    movq $0, %rdi
-    movq  $msg, %rsi
-    movq $3, %rdx
-    syscall
-    
-    movq $1, %rax
-    movq $1, %rdi
-    movq $msg, %rsi
-    movq $3, %rdx
-    syscall
-    */
-
     movq $my_str, %rdi
     xor %rsi, %rsi
-    call Calc_Str_Exp
+    call calc_exp
     nop
-    
-    nop
-
-
 #-------------------------end of test code----------------------
 
-calc_exp: #params passed arguments:
-                (%rdi=left_p, %rsi=is_left_str,
-                 %rdx=right_p, %rcx=is_right_str,
-                 %r8=op_p, %r9=func1)
 
+#------------------atomic calc func--------------------
+
+
+
+calc_exp: #params passed arguments:
+                #(%rdi=left_p, %rsi=is_left_str,
+                #%rdx=right_p, %rcx=is_right_str,
+                #%r8=op_p, %r9=func1)
 #prolog
     pushq %rbp
     movq %rsp, %rbp
@@ -51,19 +35,19 @@ calc_exp: #params passed arguments:
     
     cmp $1, (%rsi) #checking is_left_str==true?
     je .TURN_LEFT_FROM_STR_TO_NUM
-.RET_FROM_LEFT    
+	movq (%rsi), %rsi	#not str, get the num value from mem
+.RET_FROM_LEFT:    
     cmp $1, (%rcx) #checking is_right_str==true?
     je .TURN_RIGHT_FROM_STR_TO_NUM
-.RET_FROM_RIGHT
-    #now, both right and left are numbers and not srtings
+	movq (%rdx), %rdx	#not str, get the num value from mem
+.RET_FROM_RIGHT:
+    #now, both right and left are numbers and not srtings nor mem addresses
     #rdi = left
     #rdx = right
     #r8 = operator
     
     
-# --------------------finished getting expression info----------------
-
-# ------------------------------now we calculate----------------------
+# ---finished getting expression info - now we calculate------
 
     
     movq %rdi, %rax  #rax(res) = left
@@ -108,7 +92,7 @@ calc_exp: #params passed arguments:
     je .NO_OPERATOR_AND_LEFT_IS_NUM
     #if we got here, left is a string
     #rdi (the parameter for the call) is already left_p 
-    call* %r9       #*r9 hold the address to string_convert()
+    call * %r9       #r9 holds the address to string_convert()
     jmp FINISH_CALC_EXP
     
 .NO_OPERATOR_AND_LEFT_IS_NUM:
@@ -121,7 +105,7 @@ calc_exp: #params passed arguments:
     push %rcx
     push %r8
     push %r9
-    call* %r9       #*r9 hold the address to string_convert()
+    call * %r9       #*r9 hold the address to string_convert()
     mov %rax, %rdi  #rdi = left-num
     #retrieve saved params
     pop %r9
@@ -130,14 +114,14 @@ calc_exp: #params passed arguments:
     pop %rdx
     jmp .RET_FROM_LEFT
     
-.TURN_RIGHT_FROM_STR_TO_NUM
+.TURN_RIGHT_FROM_STR_TO_NUM:
     #save all registers passed as params, and will still be beeded after
     push %rdi
     push %r8
     push %r9
     mov %rdx, %rdi  #rdi=right_p
     #rdi is the param to pass to the call, we want to pass right_p
-    call* %r9       #*r9 hold the address to string_convert()
+    call * %r9       #*r9 hold the address to string_convert()
     mov %rax, %rdx  #rdx = right-num
     #retrieve saved params
     pop %r9
@@ -145,25 +129,45 @@ calc_exp: #params passed arguments:
     pop %rdi
     jmp .RET_FROM_RIGHT
 
-
-
-#-------------------------this is a temp func---------------------
-
     
-string_convert: # this is garbage
+#-------------------------main func--------------------------
+
+calc_expr:  #params passed arguments: 
+            #1.%rdi=&func-string_convert(),
+            #2.%rsi=&func-result_as_string()
+
+#prolog
     pushq %rbp
     movq %rsp, %rbp
+    dec %rsp        #allocate for read
+#end of prolog
+    #setting params for read syscall
+    mov %rbp, %rsi  #address to write to
+    movq $1, %rdx   #num of chars to read
+    movq $0, %rax   #syscall num for reading
+    movq $0, %rdi   #input is from stdin
+    syscall
+    #no need to set params for calc_recursion call
+    #%rdi is already the address to string_convert()
+    call * calc_recursion
+    movq %rax, %rdi #moving the return value
+    #from calc_recursion to param for next call
+    call * result_as_sting
+    #setting params for write syscall
+    movq %rax, %rdx #num of chars to write
+    #(returned by result_as_sting())
+    mov $what_to_print, %rsi  #address to read and write it's content
+    movq $1, %rdx   #num of chars to read
+    movq $0, %rax   #syscall num for reading
+    movq $1, %rdi   #output to stdout (screen)
+    syscall
     
-    xor %rax, %rax
-    movq %rdi, %rbx
-    movb (%rbx), %al
+#epilog
+    inc %rsp        #free space
+    leave           #this is equivalent to [movq %rbp, %rsp]
+                    #             and then [popq %rbp]
+    ret             #no stack space allocated, so none freed
     
-    leave
-    ret
-    
-    
-    
-    
-    
+#---------------------------------------------------------------------
     
     
