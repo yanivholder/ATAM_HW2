@@ -1,19 +1,61 @@
-calc {
-	the_assignment_whole_exp = get_from_stdin()
-	return_val = 0
-	copy_func (curr_whole_exp, the_assignment_whole_exp) 			//copy_func(destination,source)
-	if (empty_emp()){
-		jmp finish
-	}
-	while(!is_there_only_val()){									//no operator, whether there are parethesis or not
-		exp_loc, exp_len = get_deepest_exp(curr_whole_exp)
-		op1, op2, op = get_exp_info(curr_whole_exp, exp_loc, exp_len)
-		result = calc_exp (op1, op2, op)							//directs to 4 real culculating funcs
-		rewrite_whole_exp(curr_whole_exp, exp_loc, exp_len, result) //points curr_whole_exp to the new curr_whole_exp after change
-	}
-	return_val = extract_from_exp()									//whether there are parethesis or not
-
-
-finish
+calc_expr(func1, func2) {
+	next = malloc(1 bit)
+	next = stdin[0] // Maybe next is useless
+	return_val = calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, func2)
 	print_len = result_as_sting(return_val)
 	print_to_stdout(what_to_print, print_len)
+	free(next)
+}
+
+calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, func2) {
+	left_p = malloc(20 bits) //maximal num is 19 bits + '-'
+	left_p = "^"
+	is_left_str = malloc(1 bit)
+	is_left_str = 1 // 1 stands for true
+	right_p = malloc(20 bits)
+	is_right_str = malloc(1 bit)
+	is_right_str = 1 // 1 stands for true
+	op_p = malloc(1 bit)
+	next = malloc(1 bit)
+	op_p = "^" //A sign that op is not defined
+	
+	next = stdin[0]
+	while(true) {
+		if(next == "(") {
+			if(op_p == "^") {
+				left_p = calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, func2)
+				is_left_str = 0
+			}
+			else {
+				right_p = calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, func2)
+				is_right_str = 0
+			}
+		}
+		else if(next == ")") {
+			res(rax) = calc_exp(left_p, is_left_str, right_p, is_right_str, op_p, func1)
+			free(left_p)
+			free(right_p)
+			free(op_p)
+			free(is_right_str)
+			free(is_left_str)
+			free(next)
+			return res
+		else if(op_p == "^") {
+			if(left_p == "^")
+			{
+				is_left_str = 1
+				left_p += next
+			}
+			else if(next == "+" or "-" or "/" or "*") {
+				op_p = next
+			else {
+				is_left_str = 1
+				left_p += next
+			}
+		}
+		else {
+			is_right_str = 1
+			right_p += next
+		}
+		next = stdin[0]
+	}
