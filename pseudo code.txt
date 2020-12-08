@@ -40,7 +40,7 @@ calc_recursion(string_convert) {
 			free(is_left_str)
 			free(next)
 			return res
-		else if(op_p == "^") {
+		else if(op_p == "$") {
 			if(left_p == "$")
 			{
 				is_left_str = 1
