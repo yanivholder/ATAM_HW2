@@ -33,11 +33,11 @@ calc_exp: #params passed arguments:
     cmp $36, (%r8)       #ascii for '$' , checking op=='$'?
     je .NO_OPERATOR
     
-    cmp $1, (%rsi) #checking is_left_str==true?
+    cmp $1, %rsi #checking is_left_str==true?
     je .TURN_LEFT_FROM_STR_TO_NUM
 	movq (%rsi), %rsi	#not str, get the num value from mem
 .RET_FROM_LEFT:    
-    cmp $1, (%rcx) #checking is_right_str==true?
+    cmp $1, %rcx #checking is_right_str==true?
     je .TURN_RIGHT_FROM_STR_TO_NUM
 	movq (%rdx), %rdx	#not str, get the num value from mem
 .RET_FROM_RIGHT:
@@ -88,7 +88,7 @@ calc_exp: #params passed arguments:
 
 
 .NO_OPERATOR:
-    cmp $0, (%rsi) #checking is_left_str==false?
+    cmp $0, %rsi #checking is_left_str==false?
     je .NO_OPERATOR_AND_LEFT_IS_NUM
     #if we got here, left is a string
     #rdi (the parameter for the call) is already left_p 
@@ -141,18 +141,26 @@ calc_expr:  #params passed arguments:
     movq %rsp, %rbp
     dec %rsp        #allocate for read
 #end of prolog
+
+	push %rdi
+	push %rsi
     #setting params for read syscall
     mov %rbp, %rsi  #address to write to
     movq $1, %rdx   #num of chars to read
     movq $0, %rax   #syscall num for reading
     movq $0, %rdi   #input is from stdin
     syscall
+	pop %rsi
+	pop %rdi
+	
     #no need to set params for calc_recursion call
     #%rdi is already the address to string_convert()
+	push %rsi
     call * calc_recursion
+	pop %rsi
     movq %rax, %rdi #moving the return value
     #from calc_recursion to param for next call
-    call * result_as_sting
+    call * %rsi #result_as_sting()
     #setting params for write syscall
     movq %rax, %rdx #num of chars to write
     #(returned by result_as_sting())
