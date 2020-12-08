@@ -26,7 +26,9 @@ calc_recursion:
     # next = stdin[0]
     movq $0, %rax # syscall = sys_read
     movq $0, %rdi # descriptor = stdin
-    leaq (%rbp, 45, -1), %rsi # dest adress = next (rbp + 43)
+    movq %rbp, %r8
+    subq $45, %r8
+    movq (%r8), %rsi # dest adress = next (rbp + 43)
     movq $1, %rdx # num of char to read = 1
     syscall 
     
@@ -79,16 +81,18 @@ calc_recursion:
     movq %rbp, %rdi # rdi = &left
     movq %rbp, %r8
     subq $21, %r8
-    movb (%r8), %rsi # rsi = is_left_str
+    movq $0, %rsi
+    movb (%r8), %sil # rsi = is_left_str
     movq %rbp, %r8
     subq $22, %r8
     movq (%r8), %rdx # rdx = &right
     movq %rbp, %r8
     subq $43, %r8
-    movb (%r8), %rcx # rcx = is_right_str
-    movq %rbp, %r8
-    subq $44, %r8
-    movb (%r8), %r8 # r8 = op
+    movq $0, %rcx
+    movb (%r8), %cl # rcx = is_right_str
+    movq %rbp, %r11
+    subq $44, %r11
+    movb (%r11), %r8b # r8 = op
     call calc_exp
     popq %rdi
         # res = rax
@@ -108,7 +112,8 @@ calc_recursion:
     movb $1, (%r8) # is_left__str = 1
     movq %rbp, %r8
     subq $45, %r8
-    movb (%r8), %r11 # left += next
+    movq $0, %r11
+    movb (%r8), %r11b # left += next
     movq %r11, (%r9)
     jmp .loop_end
     
@@ -134,10 +139,11 @@ calc_recursion:
     # op = next
     movq %rbp, %r8
     subq $45, %r8
-    movb (%r8), %r11 # r11 = next
+    movq $0, %r11
+    movb (%r8), %r11b # r11 = next
     movq %rbp, %r8
     subq $44, %r8
-    movb %r11, (%r8) # op = next(r11)
+    movb %r11b, (%r8) # op = next(r11)
 
 .next_is_for_left:
     movq %rbp, %r8
@@ -154,8 +160,9 @@ calc_recursion:
 .next_is_for_left_after_r9:
     movq %rbp, %r8
     subq $45, %r8
-    movb (%r8), %r11
-    movb %r11, (%r9) # left += next
+    movq $0, %r11
+    movb (%r8), %r11b
+    movb %r11b, (%r9) # left += next
     
 .next_is_for_right:
     movq %rbp, %r8
@@ -181,7 +188,9 @@ calc_recursion:
     # next = stdin[0]
     movq $0, %rax # syscall = sys_read
     movq $0, %rdi # descriptor = stdin
-    leaq (%rbp, 43, 1), %rsi # dest adress = next (rbp + 43)
+    movq %rbp, %r8
+    subq $45, %r8
+    movq (%r8), %rsi # dest adress = next (rbp + 43)
     movq $1, %rdx # num of char to read = 1
     syscall
     

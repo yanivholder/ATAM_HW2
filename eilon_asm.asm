@@ -93,7 +93,7 @@ calc_exp: #params passed arguments:
     #if we got here, left is a string
     #rdi (the parameter for the call) is already left_p 
     call * %r9       #r9 holds the address to string_convert()
-    jmp FINISH_CALC_EXP
+    jmp .FINISH_CALC_EXP
     
 .NO_OPERATOR_AND_LEFT_IS_NUM:
     movq %rdi, %rax
