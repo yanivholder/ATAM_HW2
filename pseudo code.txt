@@ -1,38 +1,38 @@
-calc_expr(func1, func2) {
+calc_expr(string_convert, result_as_string) {
 	next = malloc(1 bit)
 	next = stdin[0] // Maybe next is useless
-	return_val = calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, func2)
+	return_val = calc_recursion(string_convert)
 	print_len = result_as_sting(return_val)
 	print_to_stdout(what_to_print, print_len)
 	free(next)
 }
 
-calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, func2) {
-	left_p = malloc(20 bits) //maximal num is 19 bits + '-'
-	left_p = "^"
-	is_left_str = malloc(1 bit)
+calc_recursion(string_convert) {
+	left_p = malloc(20 bytes) //maximal num is 19 bits + '-'
+	left_p = "$"
+	is_left_str = malloc(1 bytes)
 	is_left_str = 1 // 1 stands for true
-	right_p = malloc(20 bits)
-	is_right_str = malloc(1 bit)
+	right_p = malloc(20 bytes)
+	is_right_str = malloc(1 bytes)
 	is_right_str = 1 // 1 stands for true
-	op_p = malloc(1 bit)
-	next = malloc(1 bit)
-	op_p = "^" //A sign that op is not defined
+	op_p = malloc(1 bytes)
+	next = malloc(1 bytes)
+	op_p = "$" //A sign that op is not defined
 	
 	next = stdin[0]
 	while(true) {
 		if(next == "(") {
-			if(op_p == "^") {
-				left_p = calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, func2)
+			if(op_p == "$") {
+				left_p = calc_recursion(string_convert)
 				is_left_str = 0
 			}
 			else {
-				right_p = calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, func2)
+				right_p = calc_recursion(string_convert)
 				is_right_str = 0
 			}
 		}
 		else if(next == ")") {
-			res(rax) = calc_exp(left_p, is_left_str, right_p, is_right_str, op_p, func1)
+			res(rax) = calc_exp(left_p, is_left_str, right_p, is_right_str, op_p, string_convert)
 			free(left_p)
 			free(right_p)
 			free(op_p)
@@ -41,7 +41,7 @@ calc_recursion(next, left_p, is_left_str, right_p, is_right_str, op_p, func1, fu
 			free(next)
 			return res
 		else if(op_p == "^") {
-			if(left_p == "^")
+			if(left_p == "$")
 			{
 				is_left_str = 1
 				left_p += next
