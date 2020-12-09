@@ -1,3 +1,10 @@
 *.o
+*.cmd
+*.mk
+*.ko
+.tmp_versions/
+de.mod.c
 calc
+Module.symvers
+modules.order
 filesystem.img
