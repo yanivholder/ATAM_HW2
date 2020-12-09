@@ -26,6 +26,7 @@ calc_expr:  #params passed arguments:
     #no need to set params for calc_recursion call
     #%rdi is already the address to string_convert()
     pushq %rsi
+.bofore_calc_rec:
     call calc_recursion
 .after_calc_rec:
     popq %rsi
@@ -57,20 +58,16 @@ calc_recursion:
 .prolog_calc_recursion:
     pushq %rbp
     movq %rsp, %rbp
-    subq $46, %rsp  # left -> rbp
-                    # is_left_str -> rbp - 21
-                    # right -> rbp - 22
-                    # is_right_str -> rbp - 43
-                    # op -> rbp - 44
-                    # next -> rbp - 45
+    subq $46, %rsp
 
-    # left = '$' (not defined)
+    # is_left_str = 2 (left not defined)
     movq %rbp, %r8
-    movq $36, (%r8)
+    subq $22, %r8
+    movq $2, (%r8)
     
     # op = '$' (not defined)
     movq %rbp, %r8
-    subq $44, %r8
+    subq $45, %r8
     movb $36, (%r8)
     
     movq $36, %r9 # r9 = '$' (not defined)
@@ -80,9 +77,7 @@ calc_recursion:
     pushq %r9
     movq $0, %rax # syscall = sys_read
     movq $0, %rdi # descriptor = stdin
-    movq %rbp, %r8
-    subq $45, %r8
-    movq %r8, %rsi # dest adress = next (rbp - 45)
+    movq %rsp, %rsi # dest adress = next (rbp - 46)
     movq $1, %rdx # num of char to read = 1
     syscall
     popq %r9
@@ -90,170 +85,178 @@ calc_recursion:
     
     
 .while_loop:
-    movq %rbp, %r8
-    subq $45, %r8
-    cmpb $40, (%r8) # if next == '('
+    cmpb $40, (%rsp) # if next == '('
     jne .next_is_not_open
     movq %rbp, %r8
-    subq $44, %r8
+    subq $45, %r8
     cmpb $36, (%r8) # if op == '$'
     jne .next_is_open_op_defined
     
 .next_is_open_op_not_defined:
     # left = calc_recursion(string_convert)
     pushq %rdi # saving string_convert
+    pushq %r9
     call calc_recursion
+    popq %r9
     popq %rdi
-    movq %rax, (%rbp)
     movq %rbp, %r8
     subq $21, %r8
+    movq %rax, (%r8) # left = res
+    movq %rbp, %r8
+    subq $22, %r8
     movb $0, (%r8) # is_left__str = 0
     jmp .loop_end
     
 .next_is_open_op_defined:
     # right = calc_recursion(string_convert)
     pushq %rdi # saving string_convert
+    pushq %r9
     call calc_recursion
+    popq %r9
     popq %rdi
     movq %rbp, %r8
-    subq $22, %r8
-    movq %rax, (%r8)
+    subq $43, %r8
+    movq %rax, (%r8) # right = res
     
     movq %rbp, %r8
-    subq $43, %r8
+    subq $44, %r8
     movb $0, (%r8) # is_right__str = 0
     jmp .loop_end
     
 .next_is_not_open:
-    movq %rbp, %r8
-    subq $45, %r8
-    cmpb $41, (%r8) # if next == ')'
+    cmpb $41, (%rsp) # if next == ')'
     jne .next_is_not_open_not_close
 
-.next_is_close:   
-    dec %r9 # r9--
+.next_is_close:
+    cmpq $36, %r9 # if r9 == '$'
+    je .next_is_close_after_r9
+    inc %r9 # r9++
     movb $0, (%r9)
     movq $36, %r9 # r9 = '$' (not defined)
+.next_is_close_after_r9:
     # res(rax) = calc_exp(left, is_left_str, right, is_right_str, op, string_convert)
     pushq %rdi # saving string_convert
+    pushq %r9
     movq %rdi, %r9 # r9 = &string_convert
-    movq %rbp, %rdi # rdi = &left
-    movq %rbp, %r8
-    subq $21, %r8
-    movq $0, %rsi
-    movb (%r8), %sil # rsi = is_left_str
+    
+    movq %rbp, %r11
+    subq $21, %r11
+    movq %r11, %rdi # rdi = &left
+    
     movq %rbp, %r8
     subq $22, %r8
-    movq (%r8), %rdx # rdx = &right
+    movq $0, %rsi
+    movb (%r8), %sil # rsi = is_left_str
+    
     movq %rbp, %r8
     subq $43, %r8
+    movq %r8, %rdx # rdx = &right
+    
+    movq %rbp, %r8
+    subq $44, %r8
     movq $0, %rcx
     movb (%r8), %cl # rcx = is_right_str
+    
     movq %rbp, %r11
-    subq $44, %r11
+    subq $45, %r11
+    movq $0, %r8
     movb (%r11), %r8b # r8 = op
     call calc_exp
+    popq %r9
     popq %rdi
-        # res = rax
+        # rax = res
     
     jmp .epilog_calc_recursion
     
 .next_is_not_open_not_close:
     movq %rbp, %r8
-    subq $44, %r8
+    subq $45, %r8
     cmpb $36, (%r8) # if op == '$'
     jne .next_is_for_right
     movq %rbp, %r8
-    cmpq $36, (%r8) # if left == '$'
+    subq $22, %r8
+    cmpq $2, (%r8) # if is_left_str == 2 (left not defined)
     jne .next_is_not_open_not_close_op_not_defined_left_defined
     movq %rbp, %r8
-    subq $21, %r8
+    subq $22, %r8
     movb $1, (%r8) # is_left__str = 1
     cmpq $36, %r9 # if r9 == '$'
     jne .next_is_not_open_not_close_r9_defined
-    movq %rbp, %r9 # r9 points to the end of the current string that we are writing to
+    movq %rbp, %r8
+    subq $21, %r8
+    movq %r8, %r9 # r9 points to the end of the current string that we are writing to
     jmp .next_is_not_open_not_close_after_r9
     
 .next_is_not_open_not_close_r9_defined:
-    dec %r9 # r9--
+    inc %r9 # r9++
 
 .next_is_not_open_not_close_after_r9:
-    movq %rbp, %r8
-    subq $45, %r8
     movq $0, %r11
-    movb (%r8), %r11b # left += next
+    movb (%rsp), %r11b # left += next
     movb %r11b, (%r9)
     jmp .loop_end
     
 .next_is_not_open_not_close_op_not_defined_left_defined:
-    movq %rbp, %r8
-    subq $45, %r8
-    cmpb $43, (%r8) # if next == '+'
+    cmpb $43, (%rsp) # if next == '+'
     je .next_is_op
-    movq %rbp, %r8
-    subq $45, %r8
-    cmpb $45, (%r8) # if next == '-'
+    cmpb $45, (%rsp) # if next == '-'
     je .next_is_op
-    movq %rbp, %r8
-    subq $45, %r8
-    cmpb $42, (%r8) # if next == '*'
+    cmpb $42, (%rsp) # if next == '*'
     je .next_is_op
-    movq %rbp, %r8
-    subq $45, %r8
-    cmpb $47, (%r8) # if next == '/'
+    cmpb $47, (%rsp) # if next == '/'
     jne .next_is_for_left
     
 .next_is_op:
-    dec %r9 # r9--
+    cmpq $36, %r9 # if r9 == '$'
+    je .next_is_op_after_r9
+    inc %r9 # r9++
     movb $0, (%r9)
     movq $36, %r9 # r9 = '$' (not defined)
+.next_is_op_after_r9:
     # op = next
+    movq $0, %r11
+    movb (%rsp), %r11b # r11 = next
     movq %rbp, %r8
     subq $45, %r8
-    movq $0, %r11
-    movb (%r8), %r11b # r11 = next
-    movq %rbp, %r8
-    subq $44, %r8
     movb %r11b, (%r8) # op = next(r11)
 
 .next_is_for_left:
     movq %rbp, %r8
-    subq $21, %r8
+    subq $22, %r8
     movb $1, (%r8) # is_left__str = 1
     cmpq $36, %r9 # if r9 == '$'
     jne .next_is_for_left_r9_defined
-    movq %rbp, %r9 # r9 points to the end of the current string that we are writing to
+    movq %rbp, %r8
+    subq $21, %r8
+    movq %r8, %r9 # r9 points to the end of the current string that we are writing to
     jmp .next_is_for_left_after_r9
     
 .next_is_for_left_r9_defined:
-    dec %r9 # r9--
+    inc %r9 # r9++
 
 .next_is_for_left_after_r9:
-    movq %rbp, %r8
-    subq $45, %r8
     movq $0, %r11
-    movb (%r8), %r11b
+    movb (%rsp), %r11b
     movb %r11b, (%r9) # left += next
     
 .next_is_for_right:
     movq %rbp, %r8
-    subq $43, %r8
+    subq $44, %r8
     movb $1, (%r8) # is_right__str = 1
     cmpq $36, %r9 # if r9 == '$'
     jne .next_is_for_right_r9_defined
     movq %rbp, %r8
-    subq $22, %r8
-    movq (%r8), %r9 # r9 points to the end of the current string that we are writing to
+    subq $43, %r8
+    movq %r8, %r9 # r9 points to the end of the current string that we are writing to
     jmp .next_is_for_right_after_r9
     
 .next_is_for_right_r9_defined:
-    dec %r9 # r9--
+    inc %r9 # r9++
 
 .next_is_for_right_after_r9:
-    movq %rbp, %r8
-    subq $45, %r8
-    movq (%r8), %r11
-    movq %r11, (%r9) # left += next
+    movq $0, %r11
+    movb (%rsp), %r11b
+    movb %r11b, (%r9) # left += next
     
 .loop_end:
     # next = stdin[0]
@@ -261,9 +264,7 @@ calc_recursion:
     pushq %r9
     movq $0, %rax # syscall = sys_read
     movq $0, %rdi # descriptor = stdin
-    movq %rbp, %r8
-    subq $45, %r8
-    movq %r8, %rsi # dest adress = next (rbp - 45)
+    movq %rsp, %rsi # dest adress = next (rbp - 46)
     movq $1, %rdx # num of char to read = 1
     syscall
     popq %r9
