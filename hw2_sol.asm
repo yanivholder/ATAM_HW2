@@ -15,7 +15,7 @@ calc_expr:  #params passed arguments:
     pushq %rdi
     pushq %rsi
     #setting params for read syscall
-    movq %rbp, %rsi  #address to write to
+    movq %rsp, %rsi  #address to write to
     movq $1, %rdx   #num of chars to read
     movq $0, %rax   #syscall num for reading
     movq $0, %rdi   #input is from stdin
@@ -38,7 +38,7 @@ calc_expr:  #params passed arguments:
     mov $what_to_print, %rsi  #address to read and write it's content
 .after_what_to_print:
     # rdx = rax (num of chars)
-    movq $1, %rax   #syscall num for reading
+    movq $1, %rax   #syscall num for writing
     movq $1, %rdi   #output to stdout (screen)
     syscall
     
@@ -280,7 +280,7 @@ calc_recursion:
 calc_exp: #params passed arguments:
                 #(%rdi=left_p, %rsi=is_left_str,
                 #%rdx=right_p, %rcx=is_right_str,
-                #%r8=op_p, %r9=func1)
+                #%r8b=op, %r9=func1)
 #prolog
     pushq %rbp
     movq %rsp, %rbp
@@ -292,7 +292,7 @@ calc_exp: #params passed arguments:
     
     cmpb $1, %sil #checking is_left_str==true?
     je .TURN_LEFT_FROM_STR_TO_NUM
-	movq (%rsi), %rsi	#not str, get the num value from mem
+	movq (%rdi), %rdi	#not str, get the num value from mem
 .RET_FROM_LEFT:    
     cmpb $1, %cl #checking is_right_str==true?
     je .TURN_RIGHT_FROM_STR_TO_NUM
@@ -353,7 +353,7 @@ calc_exp: #params passed arguments:
     jmp .FINISH_CALC_EXP
     
 .NO_OPERATOR_AND_LEFT_IS_NUM:
-    movq %rdi, %rax
+    movq (%rdi), %rax
     jmp .FINISH_CALC_EXP
     
 .TURN_LEFT_FROM_STR_TO_NUM:
