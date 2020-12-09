@@ -11,28 +11,31 @@ calc_expr:  #params passed arguments:
     movq %rsp, %rbp
     dec %rsp        #allocate for read
 #end of prolog
-
+    movq %rsp, %r8  #r8 saves rsp temporerly
     pushq %rdi
     pushq %rsi
+    movq %r8, %rsi  #address to write to (previous rsp before push)
     #setting params for read syscall
-    movq %rsp, %rsi  #address to write to
     movq $1, %rdx   #num of chars to read
     movq $0, %rax   #syscall num for reading
     movq $0, %rdi   #input is from stdin
     syscall
+    
     popq %rsi
     popq %rdi
 	
     #no need to set params for calc_recursion call
     #%rdi is already the address to string_convert()
-    pushq %rsi
+    
 .bofore_calc_rec:
+    pushq %rsi
     call calc_recursion
-.after_calc_rec:
     popq %rsi
+.after_calc_rec:
     movq %rax, %rdi #moving the return value
     #from calc_recursion to param for next call
     call * %rsi #result_as_sting()
+    
     #setting params for write syscall
     movq %rax, %rdx #num of chars to write
     #(returned by result_as_sting())
@@ -45,10 +48,8 @@ calc_expr:  #params passed arguments:
     
 .epilog_calc_expr:
     inc %rsp        #free space
-    #leave           #this is equivalent to [movq %rbp, %rsp]
+    leave           #this is equivalent to [movq %rbp, %rsp]
                     #             and then [popq %rbp]
-    movq %rbp, %rsp
-    popq %rbp
     ret             #no stack space allocated, so none freed
 	
 ################ -------------- int calc_recursion(long long (*string_convert)(char*)) --- ###
@@ -73,13 +74,14 @@ calc_recursion:
     movq $36, %r9 # r9 = '$' (not defined)
     
     # next = stdin[0]
+    movq %rsp, %rsi # dest adress = next (rbp - 46)
     pushq %rdi
     pushq %r9
     movq $0, %rax # syscall = sys_read
     movq $0, %rdi # descriptor = stdin
-    movq %rsp, %rsi # dest adress = next (rbp - 46)
     movq $1, %rdx # num of char to read = 1
     syscall
+    
     popq %r9
     popq %rdi
     
@@ -97,6 +99,7 @@ calc_recursion:
     pushq %rdi # saving string_convert
     pushq %r9
     call calc_recursion
+    
     popq %r9
     popq %rdi
     movq %rbp, %r8
@@ -112,6 +115,7 @@ calc_recursion:
     pushq %rdi # saving string_convert
     pushq %r9
     call calc_recursion
+    
     popq %r9
     popq %rdi
     movq %rbp, %r8
@@ -128,8 +132,10 @@ calc_recursion:
     jne .next_is_not_open_not_close
 
 .next_is_close:
-    cmpq $36, %r9 # if r9 == '$'
-    je .next_is_close_after_r9
+    movq %rbp, %r8
+    subq $44, %r8
+    cmpb $1, (%r8) # if is_right_str == 1
+    jne .next_is_close_after_r9
     inc %r9 # r9++
     movb $0, (%r9)
     movq $36, %r9 # r9 = '$' (not defined)
@@ -162,6 +168,7 @@ calc_recursion:
     movq $0, %r8
     movb (%r11), %r8b # r8 = op
     call calc_exp
+    
     popq %r9
     popq %rdi
         # rax = res
@@ -207,8 +214,10 @@ calc_recursion:
     jne .next_is_for_left
     
 .next_is_op:
-    cmpq $36, %r9 # if r9 == '$'
-    je .next_is_op_after_r9
+    movq %rbp, %r8
+    subq $22, %r8
+    cmpb $1, (%r8) # if is_left_str == 1
+    jne .next_is_op_after_r9
     inc %r9 # r9++
     movb $0, (%r9)
     movq $36, %r9 # r9 = '$' (not defined)
@@ -219,6 +228,7 @@ calc_recursion:
     movq %rbp, %r8
     subq $45, %r8
     movb %r11b, (%r8) # op = next(r11)
+    jmp .loop_end
 
 .next_is_for_left:
     movq %rbp, %r8
@@ -238,6 +248,7 @@ calc_recursion:
     movq $0, %r11
     movb (%rsp), %r11b
     movb %r11b, (%r9) # left += next
+    jmp .loop_end
     
 .next_is_for_right:
     movq %rbp, %r8
@@ -257,16 +268,18 @@ calc_recursion:
     movq $0, %r11
     movb (%rsp), %r11b
     movb %r11b, (%r9) # left += next
+    jmp .loop_end
     
 .loop_end:
     # next = stdin[0]
+    movq %rsp, %rsi # dest adress = next (rbp - 46)
     pushq %rdi
     pushq %r9
     movq $0, %rax # syscall = sys_read
     movq $0, %rdi # descriptor = stdin
-    movq %rsp, %rsi # dest adress = next (rbp - 46)
     movq $1, %rdx # num of char to read = 1
     syscall
+    
     popq %r9
     popq %rdi
     
@@ -351,6 +364,7 @@ calc_exp: #params passed arguments:
     #if we got here, left is a string
     #rdi (the parameter for the call) is already left_p 
     call * %r9       #r9 holds the address to string_convert()
+    
     jmp .FINISH_CALC_EXP
     
 .NO_OPERATOR_AND_LEFT_IS_NUM:
@@ -364,6 +378,7 @@ calc_exp: #params passed arguments:
     push %r8
     push %r9
     call * %r9       #*r9 hold the address to string_convert()
+    
     mov %rax, %rdi  #rdi = left-num
     #retrieve saved params
     pop %r9
@@ -380,6 +395,7 @@ calc_exp: #params passed arguments:
     mov %rdx, %rdi  #rdi=right_p
     #rdi is the param to pass to the call, we want to pass right_p
     call * %r9       #*r9 hold the address to string_convert()
+    
     mov %rax, %rdx  #rdx = right-num
     #retrieve saved params
     pop %r9
