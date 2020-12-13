@@ -13,11 +13,6 @@ my_de_handler:
 	
 	pushq %rdi
 	pushq %r8
-	
-	movq 24(%rsp), %r8
-	movq $0, %rdi
-	movb 1(%r8), %dil
-    
     pushq %rsi
     pushq %rdx
     pushq %rcx
@@ -25,7 +20,8 @@ my_de_handler:
     pushq %r10
     pushq %r11
     
-    call what_to_do
+    movq %rax, %rdi			# moving diveded number as arg to func
+	call what_to_do
     
     popq %r11
     popq %r10
@@ -45,7 +41,7 @@ my_de_handler:
     jmp* old_de_handler
     
 .epilog_non_zero_case:
-	addq $2, 24(%rsp)
+	movq $1, %r10			# this is our original devider
     leave
     iretq
     
