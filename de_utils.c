@@ -3,14 +3,14 @@
 void my_store_idt(struct desc_ptr *idtr) {
 //# <STUDENT FILL>
 	// TODO: if we omit inline assembly:  store_idt(&tmpidtr);
-	asm volatile( "sidt %0" : "=m"(idtr) );
+	asm volatile( "sidt %0" : "=m"(*idtr) );
 // </STUDENT FILL>
 }
 
 void my_load_idt(struct desc_ptr *idtr) {
 // <STUDENT FILL>
 	// if we omit inline assembly: load_idt(addr);
-	asm volatile( "lidt %0" : : "m"(idtr) );
+	asm volatile( "lidt %0" : : "m"(*idtr) );
 // <STUDENT FILL>
 }
 

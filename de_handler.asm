@@ -38,7 +38,7 @@ my_de_handler:
     
 .epilog_zero_case:
 	leave
-    jmp* old_de_handler
+    jmp *old_de_handler
     
 .epilog_non_zero_case:
 	movq $1, %r10			# this is our original devider
